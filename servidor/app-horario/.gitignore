@@ -1,0 +1,41 @@
+/target/
+
+# Compilación y build
+/build/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# Dependencias
+/node_modules/
+/vendor/
+Cargo.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Variables de entorno y configuración local
+.env
+.env.local
+*.properties
+!application.properties
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+*.tmp
+*.bak
+dist/
+#ignorar archivo horario_formato_nuevo.txt
+horario_formato_nuevo.txt
