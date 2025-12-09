@@ -37,5 +37,4 @@ logs/
 *.tmp
 *.bak
 dist/
-#ignorar archivo horario_formato_nuevo.txt
-horario_formato_nuevo.txt
+
