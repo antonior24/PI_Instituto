@@ -192,6 +192,27 @@ public class AusenciaServiceImpl implements AusenciaService {
 		return ausenciasAgrupadas;
 	}
 
+	@Override
+	public List<AusenciaAgrupadaDTO> obtenerAusenciasAgrupadasTodas() {
+		List<Ausencia> lstAusencias = ausenciaRepository.findAll();
+
+		Map<LocalDate, List<Ausencia>> mapAusenciasPorFecha = lstAusencias.stream()
+				.collect(Collectors.groupingBy(Ausencia::getFecha));
+
+		return mapAusenciasPorFecha.entrySet().stream()
+				.map(entry -> {
+					List<Ausencia> lstAusenciaFecha = entry.getValue();
+					lstAusenciaFecha.sort(
+							Comparator
+									.comparing((Ausencia a) -> a.getHorario().getProfesor().getNombre(),
+											Comparator.nullsLast(String::compareToIgnoreCase))
+									.thenComparing(a -> a.getHorario().getFranja().getIdFranja())
+					);
+					return new AusenciaAgrupadaDTO(entry.getKey(), lstAusenciaFecha);
+				})
+				.toList();
+	}
+
 	// --------------------------------------------------------------------------
 	// MÉTODO: agruparEnTramosConsecutivos
 	// Descripción: Agrupa ausencias consecutivas con el mismo motivo en un solo

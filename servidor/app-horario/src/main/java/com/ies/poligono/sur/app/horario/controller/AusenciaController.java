@@ -96,6 +96,13 @@ public class AusenciaController {
 		return ResponseEntity.ok(ausencias);
 	}
 
+	@GetMapping("/todas")
+	@PreAuthorize("hasRole('ADMINISTRADOR')")
+	public ResponseEntity<List<AusenciaAgrupadaDTO>> obtenerTodasLasAusencias() {
+		List<AusenciaAgrupadaDTO> ausencias = ausenciaService.obtenerAusenciasAgrupadasTodas();
+		return ResponseEntity.ok(ausencias);
+	}
+
 	@DeleteMapping
 	@PreAuthorize("hasRole('ADMINISTRADOR') or hasRole('PROFESOR')")
 	public ResponseEntity<Void> eliminarAusencia(
