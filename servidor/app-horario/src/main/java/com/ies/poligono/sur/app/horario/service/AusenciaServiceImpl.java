@@ -19,6 +19,8 @@ import com.ies.poligono.sur.app.horario.dao.HorarioRepository;
 import com.ies.poligono.sur.app.horario.dto.AusenciaAgrupadaDTO;
 import com.ies.poligono.sur.app.horario.dto.AusenciaTramoDTO;
 import com.ies.poligono.sur.app.horario.dto.PostAusenciasInputDTO;
+import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaRequestDTO;
+import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaResponseDTO;
 import com.ies.poligono.sur.app.horario.model.Ausencia;
 import com.ies.poligono.sur.app.horario.model.Horario;
 
@@ -314,6 +316,54 @@ public class AusenciaServiceImpl implements AusenciaService {
 			ausencia.setJustificada(true);
 		}
 		ausenciaRepository.saveAll(ausencias);
+	}
+
+	@Override
+	public ValidarAusenciaResponseDTO validarAusencia(ValidarAusenciaRequestDTO dto, Long idProfesor) {
+		if (dto == null || dto.getFecha() == null) {
+			return new ValidarAusenciaResponseDTO(false, "La fecha es obligatoria", null, null, 0, 0);
+		}
+
+		LocalTime horaInicio = dto.getHoraInicio() != null ? dto.getHoraInicio() : LocalTime.MIN;
+		LocalTime horaFin = dto.getHoraFin() != null ? dto.getHoraFin() : LocalTime.of(23, 59, 59);
+
+		if (horaInicio.isAfter(horaFin)) {
+			return new ValidarAusenciaResponseDTO(false, "La hora de inicio no puede ser posterior a la de fin",
+					dto.getFecha(), null, 0, 0);
+		}
+
+		String dia;
+		try {
+			dia = AusenciasUtils.obtenerDiaSemanaByFecha(dto.getFecha());
+		} catch (IllegalArgumentException ex) {
+			return new ValidarAusenciaResponseDTO(false, ex.getMessage(), dto.getFecha(), null, 0, 0);
+		}
+
+		List<Horario> horarios = horarioRepository.findHorariosEntreHoras(idProfesor, dia, horaInicio, horaFin);
+		if (horarios.isEmpty()) {
+			return new ValidarAusenciaResponseDTO(false, "No hay clases en ese tramo horario",
+					dto.getFecha(), dia, 0, 0);
+		}
+
+		List<Ausencia> ausenciasExistentes = ausenciaRepository
+				.findByFechaAndHorario_Profesor_IdProfesor(dto.getFecha(), idProfesor);
+
+		List<Long> idsHorarioConAusencia = ausenciasExistentes.stream()
+				.map(a -> a.getHorario().getId())
+				.toList();
+
+		int conflictos = (int) horarios.stream()
+				.filter(h -> idsHorarioConAusencia.contains(h.getId()))
+				.count();
+
+		if (conflictos > 0) {
+			return new ValidarAusenciaResponseDTO(false,
+					"Ya existen ausencias registradas en ese tramo",
+					dto.getFecha(), dia, horarios.size(), conflictos);
+		}
+
+		return new ValidarAusenciaResponseDTO(true, "Tramo válido para registrar ausencia",
+				dto.getFecha(), dia, horarios.size(), 0);
 	}
 
 }

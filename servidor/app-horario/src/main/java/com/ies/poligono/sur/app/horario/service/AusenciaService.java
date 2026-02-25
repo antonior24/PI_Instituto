@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.ies.poligono.sur.app.horario.dto.AusenciaAgrupadaDTO;
 import com.ies.poligono.sur.app.horario.dto.PostAusenciasInputDTO;
+import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaRequestDTO;
+import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaResponseDTO;
 
 public interface AusenciaService {
 
@@ -23,5 +25,7 @@ public interface AusenciaService {
 	List<AusenciaAgrupadaDTO> obtenerAusenciasAgrupadasTodas();
 
 	void justificarAusenciasDia(LocalDate fecha, Long idProfesor);
+
+	ValidarAusenciaResponseDTO validarAusencia(ValidarAusenciaRequestDTO dto, Long idProfesor);
 
 }
