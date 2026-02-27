@@ -59,6 +59,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource)) 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/login").permitAll()
+                .requestMatchers("/api/recuperacion-password").permitAll()
                 .requestMatchers("/api/ping").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/ausencias/validar").permitAll()
                 
@@ -71,7 +72,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/ausencias/**").hasAnyRole("ADMINISTRADOR", "PROFESOR")
 
 
-                .requestMatchers(HttpMethod.PUT, "/api/usuarios/*/cambiar-contraseña")
+                .requestMatchers(HttpMethod.PUT, "/api/usuarios/*/cambiar-Contrasena")
                 .hasAnyRole("ADMINISTRADOR", "PROFESOR")
                 
                 .requestMatchers(HttpMethod.POST, "/api/register").hasRole("ADMINISTRADOR")
