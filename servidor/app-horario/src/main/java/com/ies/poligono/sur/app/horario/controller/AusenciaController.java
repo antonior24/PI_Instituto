@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ies.poligono.sur.app.horario.dto.AusenciaAgrupadaDTO;
 import com.ies.poligono.sur.app.horario.dto.PostAusenciasInputDTO;
+import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaRequestDTO;
+import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaResponseDTO;
 import com.ies.poligono.sur.app.horario.model.Profesor;
 import com.ies.poligono.sur.app.horario.service.AusenciaService;
 import com.ies.poligono.sur.app.horario.service.ProfesorService;
@@ -59,6 +61,33 @@ public class AusenciaController {
 		ausenciaService.crearAusenciaV2(dto, idProfesor);
 
 		return ResponseEntity.ok().build();
+	}
+
+	@PostMapping("/validar")
+	@PreAuthorize("permitAll()")
+	public ResponseEntity<ValidarAusenciaResponseDTO> validarAusencia(
+			@RequestBody ValidarAusenciaRequestDTO dto,
+			Principal principal) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		Set<String> roles = auth != null
+				? auth.getAuthorities().stream().map(r -> r.getAuthority()).collect(Collectors.toSet())
+				: Set.of();
+		Long idProfesor = null;
+		if (roles.contains("ROLE_ADMINISTRADOR") && dto.getIdProfesor() != null) {
+			idProfesor = dto.getIdProfesor();
+		} else if (principal != null) {
+			Profesor profesor = profesorService.findByEmailUsuario(principal.getName());
+			idProfesor = profesor.getIdProfesor();
+		} else if (dto.getIdProfesor() != null) {
+			idProfesor = dto.getIdProfesor();
+		} else {
+			return ResponseEntity.ok(new ValidarAusenciaResponseDTO(false,
+					"Debes indicar idProfesor cuando no estás autenticado",
+					dto != null ? dto.getFecha() : null, null, 0, 0));
+		}
+
+		ValidarAusenciaResponseDTO response = ausenciaService.validarAusencia(dto, idProfesor);
+		return ResponseEntity.ok(response);
 	}
 
 	@GetMapping
