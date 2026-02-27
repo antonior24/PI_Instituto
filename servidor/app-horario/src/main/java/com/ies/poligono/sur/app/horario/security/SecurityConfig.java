@@ -60,6 +60,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/login").permitAll()
                 .requestMatchers("/api/recuperacion-password").permitAll()
+                .requestMatchers("/api/ping").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/ausencias/validar").permitAll()
                 
                 // Horarios - accesible para todos los autenticados
                 .requestMatchers(HttpMethod.GET, "/api/horarios/**").hasAnyRole("ADMINISTRADOR", "PROFESOR")
