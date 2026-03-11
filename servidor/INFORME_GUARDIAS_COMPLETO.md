@@ -3,7 +3,6 @@
 **Fecha:** 11 de Marzo de 2026  
 **Proyecto:** Sistema de Gestión de Horarios - I.E.S. Polígono Sur  
 **Estado:** ✅ Completado y Funcional  
-**Versión:** 1.0 - Producción
 
 ---
 
