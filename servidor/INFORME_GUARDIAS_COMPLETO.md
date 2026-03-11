@@ -411,41 +411,6 @@ GET /api/guardias/puntos
 
 ---
 
-## ⚙️ INSTALACIÓN Y DESPLIEGUE
-
-### Paso 1: Ejecutar Scripts SQL
-```bash
-# Ejecutar creación de tablas
-mysql -u root -p nombre_bd < 001_create_table.sql
-
-# Ejecutar corrección de datos (IMPORTANTE)
-mysql -u root -p nombre_bd < 009_vincular_profesores_usuarios.sql
-```
-
-### Paso 2: Compilar Backend
-```bash
-cd servidor/app-horario
-mvn clean install
-```
-
-### Paso 3: Iniciar Servicios
-```bash
-# En terminal 1: Backend
-java -jar target/app-horario-1.0.jar
-
-# En terminal 2: Frontend
-cd cliente/mi-horario
-npm run dev
-```
-
-### Paso 4: Verificar Funcionamiento
-1. Acceder a `http://localhost:5173` (Frontend)
-2. Conectarse como `carlos@example.com` / `pass123`
-3. Navegar a Menú → Guardias
-4. Verificar que aparecen horarios disponibles
-
----
-
 ## 📈 MÉTRICAS Y FUNCIONALIDAD
 
 | Métrica | Valor |
