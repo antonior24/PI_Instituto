@@ -366,4 +366,27 @@ public class AusenciaServiceImpl implements AusenciaService {
 				dto.getFecha(), dia, horarios.size(), 0);
 	}
 
+	// --------------------------------------------------------------------------
+	// MÉTODO: obtenerIdHorariosConAusencias
+	// Descripción: Retorna los IDs de los horarios que tienen ausencias en una fecha
+	// --------------------------------------------------------------------------
+	@Override
+	public List<Long> obtenerIdHorariosConAusencias(LocalDate fecha) {
+		List<Ausencia> ausencias = ausenciaRepository.findByFecha(fecha);
+		return ausencias.stream()
+				.map(a -> a.getHorario().getId())
+				.distinct()
+				.toList();
+	}
+
+	// --------------------------------------------------------------------------
+	// MÉTODO: obtenerAusenciasDeUnaDia
+	// Descripción: Retorna TODAS las ausencias registradas en una fecha (de todos
+	// los profesores)
+	// --------------------------------------------------------------------------
+	@Override
+	public List<Ausencia> obtenerAusenciasDeUnaDia(LocalDate fecha) {
+		return ausenciaRepository.findByFecha(fecha);
+	}
+
 }

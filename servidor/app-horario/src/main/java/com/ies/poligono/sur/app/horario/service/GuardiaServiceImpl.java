@@ -30,6 +30,9 @@ public class GuardiaServiceImpl implements GuardiaService {
 	@Autowired
 	private ProfesorRepository profesorRepository;
 
+	@Autowired
+	private AusenciaService ausenciaService;
+
 	// --------------------------------------------------------------------------
 	// MÉTODO: registrarGuardia
 	// Descripción: Un profesor registra que cubre una clase y se le asignan puntos
@@ -48,6 +51,32 @@ public class GuardiaServiceImpl implements GuardiaService {
 		// Obtener el horario a cubrir
 		Horario horarioCobertura = horarioRepository.findById(dto.getIdHorarioCobertura())
 				.orElseThrow(() -> new IllegalArgumentException("Horario a cubrir no encontrado."));
+
+		// NUEVA VALIDACIÓN 1: Verificar que el horario a cubrir tenga una ausencia en esa fecha
+		if (!ausenciaService.obtenerIdHorariosConAusencias(dto.getFecha())
+				.contains(dto.getIdHorarioCobertura())) {
+			throw new IllegalArgumentException(
+					"No se puede cubrir una guardia de un horario que no tiene ausencia registrada en esa fecha.");
+		}
+
+		// NUEVA VALIDACIÓN 2: Verificar que el profesor tiene guardia en su horario
+		List<Horario> horariosProfesor = horarioRepository.findAll().stream()
+				.filter(h -> h.getProfesor().getIdProfesor().equals(idProfesor))
+				.toList();
+
+		if (horariosProfesor.isEmpty()) {
+			throw new IllegalArgumentException("El profesor no tiene horarios de guardia asignados.");
+		}
+
+		// NUEVA VALIDACIÓN 3: Verificar que el professor tenga una guardia que coincida con la franja
+		boolean tieneGuardiaEnFranja = horariosProfesor.stream()
+				.anyMatch(h -> h.getFranja().getIdFranja().equals(horarioCobertura.getFranja().getIdFranja())
+						&& h.getAsignatura().getNombre().contains("Guardia"));
+
+		if (!tieneGuardiaEnFranja) {
+			throw new IllegalArgumentException(
+					"El profesor no tiene una guardia asignada en esa franja horaria.");
+		}
 
 		// Verificar que no haya ya una guardia para ese horario en esa fecha
 		if (guardiaRepository.existsByHorarioCobertura_IdAndFecha(dto.getIdHorarioCobertura(), dto.getFecha())) {

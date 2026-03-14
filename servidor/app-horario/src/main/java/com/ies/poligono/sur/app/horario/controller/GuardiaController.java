@@ -23,9 +23,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ies.poligono.sur.app.horario.dto.GuardiaResponseDTO;
 import com.ies.poligono.sur.app.horario.dto.RegistrarGuardiaDTO;
+import com.ies.poligono.sur.app.horario.dto.HorarioDisponibleDTO;
 import com.ies.poligono.sur.app.horario.model.Profesor;
+import com.ies.poligono.sur.app.horario.model.Horario;
+import com.ies.poligono.sur.app.horario.model.Ausencia;
 import com.ies.poligono.sur.app.horario.service.GuardiaService;
 import com.ies.poligono.sur.app.horario.service.ProfesorService;
+import com.ies.poligono.sur.app.horario.service.AusenciaService;
+import com.ies.poligono.sur.app.horario.service.HorarioService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +44,12 @@ public class GuardiaController {
 
 	@Autowired
 	private ProfesorService profesorService;
+
+	@Autowired
+	private AusenciaService ausenciaService;
+
+	@Autowired
+	private HorarioService horarioService;
 
 	// --------------------------------------------------------------------------
 	// POST: Registrar una guardia
@@ -92,6 +103,80 @@ public class GuardiaController {
 
 		List<GuardiaResponseDTO> guardias = guardiaService.obtenerGuardiasPorProfesor(idProfessorToFetch);
 		return ResponseEntity.ok(guardias);
+	}
+
+	// --------------------------------------------------------------------------
+	// GET: Obtener horarios disponibles para guardia (busca entre TODAS las ausencias
+	// de TODOS los profesores y filtra por coincidencia de franjas)
+	// --------------------------------------------------------------------------
+	@GetMapping("/horarios-disponibles")
+	@PreAuthorize("hasRole('PROFESOR') or hasRole('ADMINISTRADOR')")
+	public ResponseEntity<List<HorarioDisponibleDTO>> obtenerHorariosDisponiblesParaGuardia(
+			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+			@RequestParam(required = false) Long idProfesor,
+			Principal principal) {
+
+		Long idProfessorAuxiliar = idProfesor;
+
+		// Si no se especifica profesor, usar el del token
+		if (idProfessorAuxiliar == null) {
+			Profesor profesor = profesorService.findByEmailUsuario(principal.getName());
+			idProfessorAuxiliar = profesor.getIdProfesor();
+		}
+
+		// Obtener todas las ausencias registradas en esa fecha (de todos los profesores)
+		List<Ausencia> ausenciasDelDia = ausenciaService.obtenerAusenciasDeUnaDia(fecha);
+
+		if (ausenciasDelDia.isEmpty()) {
+			return ResponseEntity.ok(List.of());
+		}
+
+		// Obtener todos los horarios del profesor que quiere hacer guardia
+		List<Horario> horariosGuardiasProfesor = horarioService.obtenerPorProfesor(idProfessorAuxiliar);
+
+		// Filtrar solo los horarios que sean de guardia
+		List<Horario> franjasDuardiaProfesor = horariosGuardiasProfesor.stream()
+				.filter(h -> h.getAsignatura() != null && h.getAsignatura().getNombre().contains("Guardia"))
+				.toList();
+
+		if (franjasDuardiaProfesor.isEmpty()) {
+			return ResponseEntity.ok(List.of());
+		}
+
+		// Para cada ausencia, verificar si hay coincidencia de franja
+		// y retornar el horario que se puede cubrir
+		List<HorarioDisponibleDTO> horariosDisponibles = new java.util.ArrayList<>();
+
+		for (Ausencia ausencia : ausenciasDelDia) {
+			Horario horarioAusente = ausencia.getHorario();
+
+			// Buscar si el profesor que quiere hacer guardia tiene una guardia
+			// en la MISMA FRANJA
+			boolean hayCoincidenciaDeFramja = franjasDuardiaProfesor.stream()
+					.anyMatch(h -> h.getFranja().getIdFranja()
+							.equals(horarioAusente.getFranja().getIdFranja()));
+
+			if (hayCoincidenciaDeFramja) {
+				HorarioDisponibleDTO dto = new HorarioDisponibleDTO();
+				dto.setId(horarioAusente.getId());
+				dto.setCurso(horarioAusente.getCurso() != null ? horarioAusente.getCurso().getNombre() : "—");
+				dto.setAsignatura(horarioAusente.getAsignatura() != null
+						? horarioAusente.getAsignatura().getNombre()
+						: "—");
+				dto.setAula(horarioAusente.getAula() != null ? horarioAusente.getAula().getCodigo() : "—");
+				dto.setDia(horarioAusente.getDia());
+				dto.setHoraInicio(horarioAusente.getFranja() != null
+						? horarioAusente.getFranja().getHoraInicio().toString()
+						: "—");
+				dto.setHoraFin(horarioAusente.getFranja() != null
+						? horarioAusente.getFranja().getHoraFin().toString()
+						: "—");
+				dto.setPuntos(0); // Los puntos se calcularán en el frontend
+				horariosDisponibles.add(dto);
+			}
+		}
+
+		return ResponseEntity.ok(horariosDisponibles);
 	}
 
 	// --------------------------------------------------------------------------
