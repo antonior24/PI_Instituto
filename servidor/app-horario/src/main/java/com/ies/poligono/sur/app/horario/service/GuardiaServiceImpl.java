@@ -17,6 +17,7 @@ import com.ies.poligono.sur.app.horario.dto.RegistrarGuardiaDTO;
 import com.ies.poligono.sur.app.horario.model.Guardia;
 import com.ies.poligono.sur.app.horario.model.Horario;
 import com.ies.poligono.sur.app.horario.model.Profesor;
+import com.ies.poligono.sur.app.horario.service.AusenciaService;
 
 @Service
 public class GuardiaServiceImpl implements GuardiaService {
@@ -29,6 +30,9 @@ public class GuardiaServiceImpl implements GuardiaService {
 
 	@Autowired
 	private ProfesorRepository profesorRepository;
+
+	@Autowired
+	private AusenciaService ausenciaService;
 
 	// --------------------------------------------------------------------------
 	// MÉTODO: registrarGuardia
@@ -45,9 +49,36 @@ public class GuardiaServiceImpl implements GuardiaService {
 		Profesor profesor = profesorRepository.findById(idProfesor)
 				.orElseThrow(() -> new IllegalArgumentException("Profesor no encontrado."));
 
-		// Obtener el horario a cubrir
+		// Obtener el horario a cubrir (la clase en la que hay ausencia)
 		Horario horarioCobertura = horarioRepository.findById(dto.getIdHorarioCobertura())
 				.orElseThrow(() -> new IllegalArgumentException("Horario a cubrir no encontrado."));
+
+		// Verificar que exista una ausencia para ese horario en esa fecha
+		if (!ausenciaService.obtenerIdHorariosConAusencias(dto.getFecha())
+				.contains(dto.getIdHorarioCobertura())) {
+			throw new IllegalArgumentException(
+					"No se puede cubrir una guardia de una clase sin ausencia en esa fecha.");
+		}
+
+		// Verificar que el profesor tenga horarios de guardia en su horario
+		List<Horario> horariosGuardiaProfesor = horarioRepository.findAll().stream()
+				.filter(h -> h.getProfesor() != null && h.getProfesor().getIdProfesor().equals(idProfesor))
+				.filter(h -> h.getAsignatura() != null && h.getAsignatura().getNombre().contains("Guardia"))
+				.toList();
+
+		if (horariosGuardiaProfesor.isEmpty()) {
+			throw new IllegalArgumentException("No tienes horas de guardia asignadas en tu horario.");
+		}
+
+		// Verificar que el profesor tenga una guardia en la misma franja que la ausencia
+		boolean coincideFranja = horariosGuardiaProfesor.stream()
+				.anyMatch(h -> h.getFranja() != null && horarioCobertura.getFranja() != null
+						&& h.getFranja().getIdFranja().equals(horarioCobertura.getFranja().getIdFranja()));
+
+		if (!coincideFranja) {
+			throw new IllegalArgumentException(
+					"No tienes una hora de guardia que coincida con la franja de la ausencia.");
+		}
 
 		// Verificar que no haya ya una guardia para ese horario en esa fecha
 		if (guardiaRepository.existsByHorarioCobertura_IdAndFecha(dto.getIdHorarioCobertura(), dto.getFecha())) {

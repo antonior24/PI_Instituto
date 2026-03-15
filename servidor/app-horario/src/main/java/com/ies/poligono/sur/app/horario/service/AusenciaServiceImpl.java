@@ -167,11 +167,9 @@ public class AusenciaServiceImpl implements AusenciaService {
 		List<AusenciaAgrupadaDTO> lstAusenciasAgrupadas = new ArrayList<>();
 
 		for (Entry<LocalDate, List<Ausencia>> entry : mapAusenciasPorFecha.entrySet()) {
-			LocalDate fecha = entry.getKey();
 			List<Ausencia> lstAusenciaFecha = entry.getValue();
 			// Ordenar por franja
 			lstAusenciaFecha.sort(Comparator.comparingInt(a -> a.getHorario().getFranja().getIdFranja().intValue()));
-//			lstAusenciasAgrupadas.add(new AusenciaAgrupadaDTO(fecha, agruparEnTramosConsecutivos(lstAusenciaFecha)));
 		}
 
 		return lstAusenciasAgrupadas;
@@ -365,5 +363,24 @@ public class AusenciaServiceImpl implements AusenciaService {
 		return new ValidarAusenciaResponseDTO(true, "Tramo válido para registrar ausencia",
 				dto.getFecha(), dia, horarios.size(), 0);
 	}
+	// --------------------------------------------------------------------------
+	// MÉTODO: obtenerIdHorariosConAusencias
+	// Descripción: Retorna los IDs de los horarios que tienen ausencias en una fecha
+	// --------------------------------------------------------------------------
+	@Override
+	public List<Long> obtenerIdHorariosConAusencias(LocalDate fecha) {
+		return ausenciaRepository.findByFecha(fecha).stream()
+				.map(a -> a.getHorario().getId())
+				.distinct()
+				.toList();
+	}
 
+	// --------------------------------------------------------------------------
+	// MÉTODO: obtenerAusenciasDeUnaFecha
+	// Descripción: Retorna todas las ausencias registradas en una fecha (de todos los profesores)
+	// --------------------------------------------------------------------------
+	@Override
+	public List<Ausencia> obtenerAusenciasDeUnaFecha(LocalDate fecha) {
+		return ausenciaRepository.findByFecha(fecha);
+	}
 }
