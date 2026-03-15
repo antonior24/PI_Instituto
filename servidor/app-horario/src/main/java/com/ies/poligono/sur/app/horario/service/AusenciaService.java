@@ -7,7 +7,6 @@ import com.ies.poligono.sur.app.horario.dto.AusenciaAgrupadaDTO;
 import com.ies.poligono.sur.app.horario.dto.PostAusenciasInputDTO;
 import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaRequestDTO;
 import com.ies.poligono.sur.app.horario.dto.ValidarAusenciaResponseDTO;
-import com.ies.poligono.sur.app.horario.model.Ausencia;
 
 public interface AusenciaService {
 
@@ -28,11 +27,5 @@ public interface AusenciaService {
 	void justificarAusenciasDia(LocalDate fecha, Long idProfesor);
 
 	ValidarAusenciaResponseDTO validarAusencia(ValidarAusenciaRequestDTO dto, Long idProfesor);
-
-	// Obtener los IDs de horarios que tienen ausencias en una fecha específica
-	List<Long> obtenerIdHorariosConAusencias(LocalDate fecha);
-
-	// Obtener TODAS las ausencias de una fecha específica (de todos los profesores)
-	List<Ausencia> obtenerAusenciasDeUnaDia(LocalDate fecha);
 
 }
