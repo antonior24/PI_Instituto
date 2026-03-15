@@ -65,6 +65,7 @@ public class SecurityConfig {
                 
                 // Horarios - accesible para todos los autenticados
                 .requestMatchers(HttpMethod.GET, "/api/horarios/**").hasAnyRole("ADMINISTRADOR", "PROFESOR")
+                .requestMatchers(HttpMethod.POST, "/api/horarios/ia").hasAnyRole("ADMINISTRADOR", "PROFESOR")   // acceso IA
                 .requestMatchers(HttpMethod.POST, "/api/horarios/**").hasRole("ADMINISTRADOR")
                 
                 .requestMatchers(HttpMethod.POST, "/api/ausencias/**").hasAnyRole("ADMINISTRADOR", "PROFESOR")
