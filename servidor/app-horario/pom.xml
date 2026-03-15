@@ -106,6 +106,12 @@
 			<version>3.14.0</version> 
 		</dependency>
 
+        <!-- WebFlux necesario para WebClient y llamadas a APIs externas -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
 	</dependencies>
 
 	<build>
