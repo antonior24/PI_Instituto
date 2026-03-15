@@ -17,6 +17,18 @@ The following guides illustrate how to use some features concretely:
 * [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
 * [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
 
+### Funcionalidad IA
+
+La API dispone ahora de un nuevo endpoint **POST /api/horarios/ia**. El cuerpo debe contener un JSON con los campos `pregunta` y opcionalmente `idProfesor`. Si `idProfesor` no se especifica se usará el usuario autenticado para determinar el profesor.
+
+Este endpoint se conecta con Google Gemini (modelo `gemini-2.5-flash`) para generar respuestas naturales a consultas sobre el horario. La clave de Gemini se obtiene en https://aistudio.google.com/apikey y debe configurarse en la propiedad `google.gemini.api.key` (o mediante la variable de entorno `GOOGLE_GEMINI_API_KEY`).
+
+Ejemplo de cuerpo:
+
+```json
+{ "pregunta": "¿Qué clases tengo el lunes?" }
+```
+
 ### Maven Parent overrides
 
 Due to Maven's design, elements are inherited from the parent POM to the project POM.
