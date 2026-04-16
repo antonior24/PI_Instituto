@@ -66,13 +66,15 @@ public class AuthController {
 	public ResponseEntity<?> recuperacionPassword(@RequestBody RecuperacionPasswordDTO dto) {
 		try {
 			PasswordRecoveryResult result = passwordRecoveryService.recoverPassword(dto.getCorreoRecuperacion());
-			String responseMessage = result.getMessage();
-			if (result.hasTemporaryPassword()) {
-				responseMessage += " Contrasena temporal generada: " + result.getTemporaryPassword();
-			}
-			return ResponseEntity.ok(responseMessage);
+			return ResponseEntity.ok(result);
+		} catch (IllegalStateException e) {
+			return ResponseEntity.status(500)
+					.body(new PasswordRecoveryResult(e.getMessage(), passwordRecoveryService.getEnvironmentName(), null));
 		} catch (Exception e) {
-			return ResponseEntity.status(500).body("Error al procesar la recuperación: " + e.getMessage());
+			return ResponseEntity.status(500).body(new PasswordRecoveryResult(
+					"Error al procesar la recuperacion de contrasena.",
+					passwordRecoveryService.getEnvironmentName(),
+					null));
 		}
 	}
 

@@ -2,23 +2,29 @@ package com.ies.poligono.sur.app.horario.dto;
 
 public class PasswordRecoveryResult {
 
-    private final String message;
-    private final String temporaryPassword;
+    private final String mensaje;
+    private final String ambiente;
+    private final String contrasenaTemporal;
 
-    public PasswordRecoveryResult(String message, String temporaryPassword) {
-        this.message = message;
-        this.temporaryPassword = temporaryPassword;
+    public PasswordRecoveryResult(String mensaje, String ambiente, String contrasenaTemporal) {
+        this.mensaje = mensaje;
+        this.ambiente = ambiente;
+        this.contrasenaTemporal = contrasenaTemporal;
     }
 
-    public String getMessage() {
-        return message;
+    public String getMensaje() {
+        return mensaje;
     }
 
-    public String getTemporaryPassword() {
-        return temporaryPassword;
+    public String getAmbiente() {
+        return ambiente;
+    }
+
+    public String getContrasenaTemporal() {
+        return contrasenaTemporal;
     }
 
     public boolean hasTemporaryPassword() {
-        return temporaryPassword != null && !temporaryPassword.isBlank();
+        return contrasenaTemporal != null && !contrasenaTemporal.isBlank();
     }
 }
