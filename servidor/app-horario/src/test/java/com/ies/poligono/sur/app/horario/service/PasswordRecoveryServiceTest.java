@@ -4,9 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,9 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ies.poligono.sur.app.horario.dao.UsuarioRepository;
@@ -39,7 +35,7 @@ class PasswordRecoveryServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private JavaMailSender mailSender;
+    private PasswordRecoveryEmailSender passwordRecoveryEmailSender;
 
     private Usuario usuario;
 
@@ -54,24 +50,21 @@ class PasswordRecoveryServiceTest {
     }
 
     @Test
-    void recoverPasswordInProdSavesEncodedPasswordAndSendsEmail() {
+    void recoverPasswordInProductionSavesEncodedPasswordAndSendsEmail() {
         PasswordRecoveryService service = new PasswordRecoveryService(
                 usuarioRepository,
                 passwordEncoder,
-                mailSender,
-                "production",
-                "no-reply@iespoligonosur.org",
-                "smtp.iespoligonosur.org",
-                "no-reply@iespoligonosur.org",
-                "secret");
+                passwordRecoveryEmailSender,
+                "production");
 
+        when(passwordRecoveryEmailSender.isConfigured()).thenReturn(true);
         when(usuarioRepository.findByEmail(TEST_EMAIL)).thenReturn(usuario);
         when(passwordEncoder.encode(any(String.class))).thenReturn("encoded-temp-password");
 
         PasswordRecoveryResult result = service.recoverPassword(TEST_EMAIL);
 
         assertEquals("Si el correo existe, se ha enviado una contrasena temporal al correo indicado.", result.getMensaje());
-        assertEquals("produccion", result.getAmbiente());
+        assertEquals("production", result.getAmbiente());
         assertNull(result.getContrasenaTemporal());
         verify(usuarioRepository, times(1)).save(usuario);
         assertEquals("encoded-temp-password", usuario.getPassword());
@@ -82,31 +75,16 @@ class PasswordRecoveryServiceTest {
         assertNotNull(generatedPassword);
         assertEquals(8, generatedPassword.length());
 
-        ArgumentCaptor<SimpleMailMessage> mailCaptor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, times(1)).send(mailCaptor.capture());
-
-        SimpleMailMessage sentMessage = mailCaptor.getValue();
-        assertNotNull(sentMessage.getTo());
-        assertEquals(TEST_EMAIL, sentMessage.getTo()[0]);
-        assertEquals("no-reply@iespoligonosur.org", sentMessage.getFrom());
-        assertEquals("Recuperacion de contrasena temporal", sentMessage.getSubject());
-        assertNotNull(sentMessage.getText());
-        assertTrue(sentMessage.getText().contains("Tu contrasena temporal es:"));
-        assertTrue(sentMessage.getText().contains("Usa esta contrasena para iniciar sesion"));
-        assertTrue(sentMessage.getText().contains(generatedPassword));
+        verify(passwordRecoveryEmailSender, times(1)).sendTemporaryPassword(TEST_EMAIL, generatedPassword);
     }
 
     @Test
-    void recoverPasswordOutsideProdReturnsTemporaryPasswordWithoutSendingEmail() {
+    void recoverPasswordInTestingReturnsTemporaryPasswordWithoutSendingEmail() {
         PasswordRecoveryService service = new PasswordRecoveryService(
                 usuarioRepository,
                 passwordEncoder,
-                mailSender,
-                "testing",
-                "no-reply@iespoligonosur.org",
-                "",
-                "",
-                "");
+                passwordRecoveryEmailSender,
+                "testing");
 
         when(usuarioRepository.findByEmail(TEST_EMAIL)).thenReturn(usuario);
         when(passwordEncoder.encode(any(String.class))).thenReturn("encoded-temp-password");
@@ -120,27 +98,23 @@ class PasswordRecoveryServiceTest {
         assertEquals(8, result.getContrasenaTemporal().length());
         assertEquals("encoded-temp-password", usuario.getPassword());
         verify(usuarioRepository, times(1)).save(usuario);
-        verify(mailSender, never()).send(any(SimpleMailMessage.class));
+        verify(passwordRecoveryEmailSender, never()).sendTemporaryPassword(any(String.class), any(String.class));
     }
 
     @Test
-    void recoverPasswordWithUnknownEmailReturnsNeutralResponse() {
+    void recoverPasswordInProductionFailsWhenResendIsNotConfigured() {
         PasswordRecoveryService service = new PasswordRecoveryService(
                 usuarioRepository,
                 passwordEncoder,
-                mailSender,
-                "production",
-                "no-reply@iespoligonosur.org",
-                "",
-                "",
-                "");
+                passwordRecoveryEmailSender,
+                "production");
 
-        when(usuarioRepository.findByEmail(TEST_EMAIL)).thenReturn(null);
+        when(passwordRecoveryEmailSender.isConfigured()).thenReturn(false);
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> service.recoverPassword(TEST_EMAIL));
 
-        assertEquals("No se pudo enviar el correo de recuperacion. Revisa la configuracion SMTP del entorno.",
+        assertEquals("No se pudo enviar el correo de recuperacion. Revisa la configuracion de Resend.",
                 exception.getMessage());
         verify(usuarioRepository, never()).findByEmail(TEST_EMAIL);
         verify(usuarioRepository, never()).save(any(Usuario.class));
@@ -148,50 +122,26 @@ class PasswordRecoveryServiceTest {
     }
 
     @Test
-    void recoverPasswordInProductionThrowsWhenEmailSendingFails() {
+    void recoverPasswordInProductionPropagatesResendFailure() {
         PasswordRecoveryService service = new PasswordRecoveryService(
                 usuarioRepository,
                 passwordEncoder,
-                mailSender,
-                "production",
-                "no-reply@iespoligonosur.org",
-                "smtp.iespoligonosur.org",
-                "no-reply@iespoligonosur.org",
-                "secret");
+                passwordRecoveryEmailSender,
+                "production");
 
+        when(passwordRecoveryEmailSender.isConfigured()).thenReturn(true);
         when(usuarioRepository.findByEmail(TEST_EMAIL)).thenReturn(usuario);
         when(passwordEncoder.encode(any(String.class))).thenReturn("encoded-temp-password");
-        org.mockito.Mockito.doThrow(new MailSendException("SMTP down"))
-                .when(mailSender)
-                .send(any(SimpleMailMessage.class));
+        org.mockito.Mockito.doThrow(new IllegalStateException("No se pudo enviar el correo de recuperacion. Revisa la configuracion de Resend."))
+                .when(passwordRecoveryEmailSender)
+                .sendTemporaryPassword(any(String.class), any(String.class));
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> service.recoverPassword(TEST_EMAIL));
 
-        assertEquals("No se pudo enviar el correo de recuperacion. Revisa la configuracion SMTP del entorno.",
+        assertEquals("No se pudo enviar el correo de recuperacion. Revisa la configuracion de Resend.",
                 exception.getMessage());
         verify(usuarioRepository, times(1)).save(usuario);
-    }
-
-    @Test
-    void recoverPasswordThrowsWhenMailIsNotConfiguredAndTemporaryPasswordIsHidden() {
-        PasswordRecoveryService service = new PasswordRecoveryService(
-                usuarioRepository,
-                passwordEncoder,
-                mailSender,
-                "production",
-                "no-reply@iespoligonosur.org",
-                "",
-                "",
-                "");
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> service.recoverPassword(TEST_EMAIL));
-
-        assertEquals("No se pudo enviar el correo de recuperacion. Revisa la configuracion SMTP del entorno.",
-                exception.getMessage());
-        verify(usuarioRepository, never()).findByEmail(TEST_EMAIL);
-        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
     @Test
@@ -199,12 +149,8 @@ class PasswordRecoveryServiceTest {
         PasswordRecoveryService service = new PasswordRecoveryService(
                 usuarioRepository,
                 passwordEncoder,
-                mailSender,
-                "testing",
-                "no-reply@iespoligonosur.org",
-                "",
-                "",
-                "");
+                passwordRecoveryEmailSender,
+                "testing");
 
         when(usuarioRepository.findByEmail(TEST_EMAIL)).thenReturn(null);
 
@@ -216,6 +162,6 @@ class PasswordRecoveryServiceTest {
         assertFalse(result.hasTemporaryPassword());
         verify(usuarioRepository, never()).save(any(Usuario.class));
         verify(passwordEncoder, never()).encode(any(String.class));
-        verify(mailSender, never()).send(any(SimpleMailMessage.class));
+        verify(passwordRecoveryEmailSender, never()).sendTemporaryPassword(any(String.class), any(String.class));
     }
 }
