@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ import com.ies.poligono.sur.app.horario.model.Horario;
 import com.ies.poligono.sur.app.horario.model.Profesor;
 import com.ies.poligono.sur.app.horario.processor.HorarioServiceProcessor;
 import com.ies.poligono.sur.app.horario.service.HorarioService;
+import com.ies.poligono.sur.app.horario.service.HorarioPDFService;
 import com.ies.poligono.sur.app.horario.service.ProfesorService;
 
 @RestController
@@ -39,6 +41,9 @@ public class HorarioController {
 
 	@Autowired
 	ProfesorService profesorService;
+
+	@Autowired
+	HorarioPDFService horarioPDFService;
 
 	// Endpoint para obtener horarios
 	@GetMapping
@@ -89,6 +94,40 @@ public class HorarioController {
 			return ResponseEntity.ok(horariosDTO);
 		} catch (Exception e) {
 			System.err.println("❌ Error al obtener mis horarios: " + e.getMessage());
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	// Endpoint para descargar el horario en PDF
+	@GetMapping("/pdf/mis-horarios")
+	@PreAuthorize("hasAnyRole('PROFESOR', 'ADMINISTRADOR')")
+	public ResponseEntity<byte[]> descargarHorarioPDF(Principal principal) {
+		try {
+			if (principal == null || principal.getName() == null) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+			}
+
+			Profesor profesor = profesorService.findByEmailUsuario(principal.getName());
+			if (profesor == null) {
+				System.out.println("❌ Profesor no encontrado para email: " + principal.getName());
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+
+			List<Horario> horarios = horarioService.obtenerPorProfesor(profesor.getIdProfesor());
+			System.out.println("✅ Generando PDF del horario para profesor " + profesor.getNombre() + ": " + horarios.size() + " clases");
+			
+			// Generar el PDF
+			byte[] pdfBytes = horarioPDFService.generarHorarioPDF(profesor, horarios);
+			
+			// Retornar el PDF como descarga
+			return ResponseEntity.ok()
+					.contentType(MediaType.APPLICATION_PDF)
+					.header("Content-Disposition", "attachment; filename=horario-" + profesor.getNombre().replaceAll("\\s+", "_") + ".pdf")
+					.body(pdfBytes);
+					
+		} catch (Exception e) {
+			System.err.println("❌ Error al generar el PDF del horario: " + e.getMessage());
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
