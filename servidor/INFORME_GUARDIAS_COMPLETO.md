@@ -485,3 +485,58 @@ El sistema de Guardias ha sido implementado completamente y está listo para pro
 
 **Fecha de Implementación:** 11 de Marzo de 2026  
 **Estado:** LISTO PARA PRODUCCIÓN ✅
+
+---
+
+## 🆕 ANEXO: Exportación de Horario en PDF (Profesor autenticado)
+
+**Fecha:** 14 de Abril de 2026  
+**Estado:** ✅ Implementado
+
+### 🎯 ¿De qué trata esta funcionalidad?
+
+Se ha incorporado la opción para que el profesor autenticado pueda descargar su horario personal en formato PDF desde el menú lateral de la aplicación.
+
+La exportación genera un documento con:
+- Nombre del profesor
+- Tabla con día, franja horaria, asignatura, curso, aula y puntos
+- Resumen final con total de clases y total de puntos
+
+### 🌐 Endpoint nuevo
+
+| Método | Ruta | Descripción | Permisos |
+|---|---|---|---|
+| **GET** | `/api/horarios/pdf/mis-horarios` | Descarga el horario del profesor autenticado en PDF | Profesor, Admin |
+
+### 🔄 Flujo funcional
+
+1. Profesor pulsa "Descargar horario (PDF)" en el menú lateral.
+2. Frontend llama al endpoint `GET /api/horarios/pdf/mis-horarios` con token JWT.
+3. Backend obtiene el profesor desde el email del token.
+4. Backend consulta horarios del profesor y construye el PDF.
+5. Backend devuelve `application/pdf` con `Content-Disposition` para descarga.
+6. Frontend crea un blob y lanza la descarga del archivo.
+
+### 📁 Archivos involucrados
+
+#### Backend
+- `PI_Instituto/servidor/app-horario/pom.xml`
+   - Añadida dependencia `itext7-core` para generación de PDF.
+
+- `PI_Instituto/servidor/app-horario/src/main/java/com/ies/poligono/sur/app/horario/service/HorarioPDFService.java`
+   - Nuevo servicio de generación del documento PDF.
+   - Construcción de cabecera, tabla de horarios y resumen de puntos.
+
+- `PI_Instituto/servidor/app-horario/src/main/java/com/ies/poligono/sur/app/horario/controller/HorarioController.java`
+   - Inyección de `HorarioPDFService`.
+   - Nuevo endpoint `GET /pdf/mis-horarios`.
+   - Respuesta con `MediaType.APPLICATION_PDF` y nombre de archivo.
+
+#### Frontend
+- `PI_Cliente/mi-horario/src/components/MenuLateral.vue`
+   - Nuevo botón para profesores: "Descargar horario (PDF)".
+   - Nueva función `descargarHorarioPDF()` que solicita el blob y dispara la descarga.
+
+### ✅ Resultado
+
+El profesorado puede descargar su horario personal en PDF desde la interfaz sin pasos manuales adicionales, reutilizando autenticación y permisos existentes del sistema.
