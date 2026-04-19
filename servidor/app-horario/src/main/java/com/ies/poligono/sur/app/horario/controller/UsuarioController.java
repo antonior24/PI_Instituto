@@ -98,21 +98,29 @@ public class UsuarioController {
 	@PreAuthorize("hasRole('ADMINISTRADOR')")
 	public ResponseEntity<?> actualizarUsuario(
 	        @PathVariable Long id_usuario, // Recibe el id_usuario en la URL
-	        @Valid @RequestBody Usuario usuarioActualizado) {
+	        @RequestBody Usuario usuarioActualizado) {
 
 	    try {
+	    	System.out.println("🔄 Actualizando usuario ID: " + id_usuario);
+	    	System.out.println("📧 Datos: email=" + usuarioActualizado.getEmail() + ", rol=" + usuarioActualizado.getRol() + ", nombre=" + usuarioActualizado.getNombre());
+	    	
 	        // Llamamos al servicio para actualizar el usuario
 	        Usuario usuarioActualizadoDesdeServicio = usuarioService.actualizarUsuario(id_usuario, usuarioActualizado);
 
+	        System.out.println("✅ Usuario actualizado exitosamente");
 	        // Si todo es correcto, devolver el usuario actualizado
 	        return ResponseEntity.ok(usuarioActualizadoDesdeServicio);
 
 	    } catch (RuntimeException e) {
 	        // Si el correo ya existe, devolver un error con el mensaje
+	        System.err.println("❌ Error Runtime: " + e.getMessage());
+	        e.printStackTrace();
 	        return ResponseEntity.status(400).body(e.getMessage());
 	    } catch (Exception e) {
 	        // Para otros errores
-	        return ResponseEntity.status(500).body("Error al actualizar el usuario");
+	        System.err.println("❌ Error General: " + e.getMessage());
+	        e.printStackTrace();
+	        return ResponseEntity.status(500).body("Error al actualizar el usuario: " + e.getMessage());
 	    }
     }
 

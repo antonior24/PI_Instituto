@@ -73,8 +73,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 			Usuario usuarioExistente = usuarioExistenteOpt.get();
 
 			// Verificar si el nuevo correo electrónico ya existe y no pertenece al usuario
-			// actual
-			if (!usuarioExistente.getEmail().equals(usuarioActualizado.getEmail())
+			// actual (case-insensitive)
+			if (!usuarioExistente.getEmail().equalsIgnoreCase(usuarioActualizado.getEmail())
 					&& usuarioRepository.existsByEmail(usuarioActualizado.getEmail())) {
 				throw new RuntimeException("El correo electrónico ya está registrado");
 			}
