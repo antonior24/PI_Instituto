@@ -60,5 +60,19 @@ CREATE TABLE Ausencia (
     id INT AUTO_INCREMENT PRIMARY KEY,
     descripcion TEXT,
     id_horario INT NOT NULL,
+    fecha DATE,
+    justificada BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (id_horario) REFERENCES Horario(id)
+);
+
+-- Tabla Guardia (Guard Duty)
+CREATE TABLE Guardia (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_profesor INT NOT NULL,
+    id_horario_cobertura INT NOT NULL,
+    fecha DATE NOT NULL,
+    puntos INT NOT NULL DEFAULT 0,
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_profesor) REFERENCES Profesor(id_profesor),
+    FOREIGN KEY (id_horario_cobertura) REFERENCES Horario(id)
 );
