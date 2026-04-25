@@ -17,4 +17,11 @@ public interface ActividadRepository extends JpaRepository<Actividad, Long> {
     // Esta consulta nos dice cuáles son las páginas (URLs) más visitadas
     @Query("SELECT a.url as url, COUNT(a) as total FROM Actividad a WHERE a.tipo = 'VISTA_PAGINA' GROUP BY a.url ORDER BY total DESC")
     List<Map<String, Object>> countVisitasPorPagina();
+
+    // Filtra por el usuario autenticado para mostrar solo sus propias estadísticas
+    @Query("SELECT a.tipo as tipo, COUNT(a) as total FROM Actividad a WHERE a.usuario = :usuario GROUP BY a.tipo")
+    List<Map<String, Object>> countEventosPorTipoByUsuario(String usuario);
+
+    @Query("SELECT a.url as url, COUNT(a) as total FROM Actividad a WHERE a.tipo = 'VISTA_PAGINA' AND a.usuario = :usuario GROUP BY a.url ORDER BY total DESC")
+    List<Map<String, Object>> countVisitasPorPaginaByUsuario(String usuario);
 }
