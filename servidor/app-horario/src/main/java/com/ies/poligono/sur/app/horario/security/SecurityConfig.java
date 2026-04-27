@@ -75,6 +75,11 @@ public class SecurityConfig {
 
                 .requestMatchers(HttpMethod.PUT, "/api/usuarios/*/cambiar-Contrasena")
                 .hasAnyRole("ADMINISTRADOR", "PROFESOR")
+
+                // Imágenes de perfil: admin puede cualquier usuario; profesor solo la suya (se valida en controller)
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/*/imagen").hasAnyRole("ADMINISTRADOR", "PROFESOR")
+                .requestMatchers(HttpMethod.POST, "/api/usuarios/*/imagen").hasAnyRole("ADMINISTRADOR", "PROFESOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/usuarios/*/imagen").hasAnyRole("ADMINISTRADOR", "PROFESOR")
                 
                 .requestMatchers(HttpMethod.POST, "/api/register").hasRole("ADMINISTRADOR")
                 .requestMatchers(HttpMethod.GET, "/api/usuarios/**").hasRole("ADMINISTRADOR")
