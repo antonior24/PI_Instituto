@@ -5,11 +5,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,11 +21,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.ies.poligono.sur.app.horario.dao.UsuarioImagenRepository;
 import com.ies.poligono.sur.app.horario.dao.UsuarioRepository;
 import com.ies.poligono.sur.app.horario.dto.CambioContrasenaDTO;
 import com.ies.poligono.sur.app.horario.model.Profesor;
 import com.ies.poligono.sur.app.horario.model.Usuario;
+import com.ies.poligono.sur.app.horario.model.UsuarioImagen;
 import com.ies.poligono.sur.app.horario.service.ProfesorService;
 import com.ies.poligono.sur.app.horario.service.UsuarioService;
 
@@ -42,10 +47,112 @@ public class UsuarioController {
 
 	@Autowired
 	UsuarioRepository usuarioRepository;
+
+	@Autowired
+	private UsuarioImagenRepository usuarioImagenRepository;
 	
 	@GetMapping
 	public List<Usuario> obtenerUsuarios() {
 		return usuarioService.obtenerUsuarios();
+	}
+
+	@GetMapping("/{id}/imagen")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'PROFESOR')")
+	public ResponseEntity<?> obtenerImagen(@PathVariable Long id, Authentication authentication) {
+		Usuario usuarioLogueado = usuarioRepository.findByEmail(authentication.getName());
+		if (usuarioLogueado == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no autenticado");
+		}
+
+		boolean esAdmin = authentication.getAuthorities().stream()
+				.anyMatch(a -> "ROLE_ADMINISTRADOR".equals(a.getAuthority()));
+		if (!esAdmin && !usuarioLogueado.getId().equals(id)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body("No tienes permisos para ver la imagen de otro usuario");
+		}
+
+		return usuarioImagenRepository.findById(id)
+				.<ResponseEntity<?>>map(img -> ResponseEntity.ok()
+						.header(HttpHeaders.CONTENT_TYPE, img.getMimeType())
+						.body(img.getDatos()))
+				.orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body("No hay imagen para este usuario"));
+	}
+
+	@PostMapping(path = "/{id}/imagen", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'PROFESOR')")
+	public ResponseEntity<?> subirImagen(@PathVariable Long id, @RequestParam("imagen") MultipartFile imagen,
+			Authentication authentication) {
+		Usuario usuarioLogueado = usuarioRepository.findByEmail(authentication.getName());
+		if (usuarioLogueado == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no autenticado");
+		}
+
+		boolean esAdmin = authentication.getAuthorities().stream()
+				.anyMatch(a -> "ROLE_ADMINISTRADOR".equals(a.getAuthority()));
+		if (!esAdmin && !usuarioLogueado.getId().equals(id)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body("No tienes permisos para cambiar la imagen de otro usuario");
+		}
+
+		if (imagen == null || imagen.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se ha enviado ninguna imagen");
+		}
+
+		String contentType = imagen.getContentType();
+		if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El archivo debe ser una imagen");
+		}
+
+		long maxBytes = 2L * 1024L * 1024L; // 2 MB
+		if (imagen.getSize() > maxBytes) {
+			return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+					.body("La imagen excede el tamaño máximo permitido (2 MB)");
+		}
+
+		Usuario usuarioObjetivo = usuarioRepository.findById(id).orElse(null);
+		if (usuarioObjetivo == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+		}
+
+		try {
+			UsuarioImagen usuarioImagen = new UsuarioImagen(id, contentType, imagen.getBytes());
+			usuarioImagenRepository.save(usuarioImagen);
+
+			usuarioObjetivo.setImagen(true);
+			usuarioRepository.save(usuarioObjetivo);
+
+			return ResponseEntity.ok("Imagen actualizada");
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error al guardar la imagen: " + e.getMessage());
+		}
+	}
+
+	@DeleteMapping("/{id}/imagen")
+	@PreAuthorize("hasAnyRole('ADMINISTRADOR', 'PROFESOR')")
+	public ResponseEntity<?> borrarImagen(@PathVariable Long id, Authentication authentication) {
+		Usuario usuarioLogueado = usuarioRepository.findByEmail(authentication.getName());
+		if (usuarioLogueado == null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuario no autenticado");
+		}
+
+		boolean esAdmin = authentication.getAuthorities().stream()
+				.anyMatch(a -> "ROLE_ADMINISTRADOR".equals(a.getAuthority()));
+		if (!esAdmin && !usuarioLogueado.getId().equals(id)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body("No tienes permisos para borrar la imagen de otro usuario");
+		}
+
+		Usuario usuarioObjetivo = usuarioRepository.findById(id).orElse(null);
+		if (usuarioObjetivo == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+		}
+
+		usuarioImagenRepository.deleteById(id);
+		usuarioObjetivo.setImagen(false);
+		usuarioRepository.save(usuarioObjetivo);
+
+		return ResponseEntity.ok("Imagen eliminada");
 	}
 	
 	

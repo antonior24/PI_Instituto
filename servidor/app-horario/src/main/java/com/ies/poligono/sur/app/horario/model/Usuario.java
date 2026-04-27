@@ -39,4 +39,7 @@ public class Usuario {
     @Pattern(regexp = "^(profesor|administrador)$", message = "El rol debe ser 'profesor' o 'administrador'")
     private String rol;
 
+    @Column(name = "tiene_imagen", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private boolean imagen;
+
 }
