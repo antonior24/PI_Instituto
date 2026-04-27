@@ -148,7 +148,7 @@ public class UsuarioController {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
 		}
 
-		usuarioImagenRepository.deleteById(id);
+		usuarioImagenRepository.findById(id).ifPresent(usuarioImagenRepository::delete);
 		usuarioObjetivo.setImagen(false);
 		usuarioRepository.save(usuarioObjetivo);
 

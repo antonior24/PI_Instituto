@@ -114,7 +114,7 @@ class PasswordRecoveryServiceTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> service.recoverPassword(TEST_EMAIL));
 
-        assertEquals("No se pudo enviar el correo de recuperacion. Revisa la configuracion de Resend.",
+        assertEquals("No se pudo enviar el correo. Verifica Mailpit (docker run -p 1025:1025 -p 8025:8025 mailpit/mailpit)",
                 exception.getMessage());
         verify(usuarioRepository, never()).findByEmail(TEST_EMAIL);
         verify(usuarioRepository, never()).save(any(Usuario.class));

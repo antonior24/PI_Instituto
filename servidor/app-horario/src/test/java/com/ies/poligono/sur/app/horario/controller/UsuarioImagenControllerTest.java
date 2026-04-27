@@ -44,14 +44,14 @@ class UsuarioImagenControllerTest {
 		profesor = new Usuario();
 		profesor.setNombre("Profe");
 		profesor.setEmail("profe@iespoligonosur.org");
-		profesor.setPassword("x");
+		profesor.setPassword("123456");
 		profesor.setRol("profesor");
 		profesor = usuarioRepository.save(profesor);
 
 		admin = new Usuario();
 		admin.setNombre("Admin");
 		admin.setEmail("admin@admin.com");
-		admin.setPassword("x");
+		admin.setPassword("123456");
 		admin.setRol("administrador");
 		admin = usuarioRepository.save(admin);
 	}
@@ -83,6 +83,9 @@ class UsuarioImagenControllerTest {
 				.andExpect(status().isForbidden());
 
 		mockMvc.perform(get("/api/usuarios/{id}/imagen", admin.getId()))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(delete("/api/usuarios/{id}/imagen", admin.getId()))
 				.andExpect(status().isForbidden());
 	}
 
@@ -119,6 +122,9 @@ class UsuarioImagenControllerTest {
 		mockMvc.perform(multipart("/api/usuarios/{id}/imagen", profesor.getId()).file(file))
 				.andExpect(status().isOk());
 
+		Usuario trasSubida = usuarioRepository.findById(profesor.getId()).orElseThrow();
+		assertThat(trasSubida.isImagen()).isTrue();
+
 		mockMvc.perform(delete("/api/usuarios/{id}/imagen", profesor.getId()))
 				.andExpect(status().isOk());
 
@@ -128,5 +134,69 @@ class UsuarioImagenControllerTest {
 		Usuario recargado = usuarioRepository.findById(profesor.getId()).orElseThrow();
 		assertThat(recargado.isImagen()).isFalse();
 	}
-}
 
+	@Test
+	void getSinAutenticacionDevuelve401o403() throws Exception {
+		MvcResult result = mockMvc.perform(get("/api/usuarios/{id}/imagen", profesor.getId()))
+				.andReturn();
+		int status = result.getResponse().getStatus();
+		assertThat(status).isIn(401, 403);
+	}
+
+	@Test
+	void postSinAutenticacionDevuelve401o403() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("imagen", "a.png", "image/png", new byte[] { 1 });
+
+		MvcResult result = mockMvc.perform(multipart("/api/usuarios/{id}/imagen", profesor.getId()).file(file))
+				.andReturn();
+		int status = result.getResponse().getStatus();
+		assertThat(status).isIn(401, 403);
+	}
+
+	@Test
+	@WithMockUser(username = "admin@admin.com", roles = { "ADMINISTRADOR" })
+	void postArchivoVacioDevuelve400() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("imagen", "a.png", "image/png", new byte[0]);
+		mockMvc.perform(multipart("/api/usuarios/{id}/imagen", profesor.getId()).file(file))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@WithMockUser(username = "admin@admin.com", roles = { "ADMINISTRADOR" })
+	void postContentTypeNoImagenDevuelve400() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("imagen", "a.pdf", "application/pdf", new byte[] { 1, 2 });
+		mockMvc.perform(multipart("/api/usuarios/{id}/imagen", profesor.getId()).file(file))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@WithMockUser(username = "admin@admin.com", roles = { "ADMINISTRADOR" })
+	void postMasDe2MBDevuelve413() throws Exception {
+		byte[] bytes = new byte[(2 * 1024 * 1024) + 1];
+		MockMultipartFile file = new MockMultipartFile("imagen", "a.jpg", "image/jpeg", bytes);
+		mockMvc.perform(multipart("/api/usuarios/{id}/imagen", profesor.getId()).file(file))
+				.andExpect(status().isPayloadTooLarge());
+	}
+
+	@Test
+	@WithMockUser(username = "admin@admin.com", roles = { "ADMINISTRADOR" })
+	void postUsuarioInexistenteDevuelve404() throws Exception {
+		MockMultipartFile file = new MockMultipartFile("imagen", "a.png", "image/png", new byte[] { 1 });
+		mockMvc.perform(multipart("/api/usuarios/{id}/imagen", 999999L).file(file))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@WithMockUser(username = "admin@admin.com", roles = { "ADMINISTRADOR" })
+	void deleteSinImagenEsIdempotenteDevuelve200YDejaFlagFalse() throws Exception {
+		Usuario objetivo = usuarioRepository.findById(profesor.getId()).orElseThrow();
+		objetivo.setImagen(true);
+		usuarioRepository.save(objetivo);
+
+		mockMvc.perform(delete("/api/usuarios/{id}/imagen", profesor.getId()))
+				.andExpect(status().isOk());
+
+		Usuario recargado = usuarioRepository.findById(profesor.getId()).orElseThrow();
+		assertThat(recargado.isImagen()).isFalse();
+	}
+}
