@@ -31,9 +31,7 @@ public class HorarioServiceImpl implements HorarioService {
 
 	@Override
 	public List<Horario> obtenerPorProfesor(Long idProfesor) {
-		return horarioRepository.findAll().stream()
-			.filter(h -> h.getProfesor() != null && h.getProfesor().getIdProfesor().equals(idProfesor))
-			.toList();
+		return horarioRepository.findByProfesor_IdProfesorOrderByDiaAscFranja_HoraInicioAsc(idProfesor);
 	}
 
 }

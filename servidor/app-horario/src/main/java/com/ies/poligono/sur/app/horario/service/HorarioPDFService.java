@@ -1,12 +1,15 @@
 package com.ies.poligono.sur.app.horario.service;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.ies.poligono.sur.app.horario.model.Horario;
 import com.ies.poligono.sur.app.horario.model.Profesor;
+import com.itextpdf.io.font.PdfEncodings;
 import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.font.PdfFont;
@@ -31,9 +34,9 @@ public class HorarioPDFService {
             Document document = new Document(pdfDoc);
             
             // Fuentes
-            PdfFont fontTitulo = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-            PdfFont fontSubtitulo = PdfFontFactory.createFont(StandardFonts.HELVETICA_BOLD);
-            PdfFont fontNormal = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            PdfFont fontTitulo = cargarFuentePreferida(true);
+            PdfFont fontSubtitulo = cargarFuentePreferida(true);
+            PdfFont fontNormal = cargarFuentePreferida(false);
             
             // Agregar título
             Paragraph titulo = new Paragraph("HORARIO PERSONAL")
@@ -44,7 +47,7 @@ public class HorarioPDFService {
             document.add(titulo);
             
             // Agregar nombre del profesor
-            Paragraph nombreProfesor = new Paragraph("Profesor: " + profesor.getNombre())
+                Paragraph nombreProfesor = new Paragraph("Profesor: " + (profesor.getNombre() != null ? profesor.getNombre() : ""))
                     .setFont(fontSubtitulo)
                     .setFontSize(12)
                     .setTextAlignment(TextAlignment.CENTER)
@@ -154,6 +157,37 @@ public class HorarioPDFService {
             return Integer.parseInt(puntos);
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    private PdfFont cargarFuentePreferida(boolean negrita) {
+        String[] rutas = negrita
+                ? new String[] {
+                        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+                        "C:/Windows/Fonts/arialbd.ttf",
+                        "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+                }
+                : new String[] {
+                        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                        "C:/Windows/Fonts/arial.ttf",
+                        "/System/Library/Fonts/Supplemental/Arial.ttf"
+                };
+
+        for (String ruta : rutas) {
+            try {
+                if (Files.exists(Path.of(ruta))) {
+                    return PdfFontFactory.createFont(ruta, PdfEncodings.IDENTITY_H);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        try {
+            return PdfFontFactory.createFont(negrita ? StandardFonts.HELVETICA_BOLD : StandardFonts.HELVETICA);
+        } catch (Exception e) {
+            throw new RuntimeException("No se pudo cargar una fuente para generar el PDF", e);
         }
     }
 }
