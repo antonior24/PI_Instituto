@@ -55,7 +55,7 @@ class GuardiaControllerRegistrarIT {
 
 		LocalDate fecha = LocalDate.of(2026, 4, 27);
 		GuardiaResponseDTO response = new GuardiaResponseDTO(
-				1L, 77L, "Profe", 2L, "1ER ESO", fecha, 4, "Matematicas", "A1", "08:15 - 09:15");
+				1L, 77L, "Profe", 10L, 2L, "1ER ESO", fecha, 4, "Matematicas", "A1", "08:15 - 09:15");
 
 		when(guardiaService.registrarGuardia(any(RegistrarGuardiaDTO.class), eq(77L))).thenReturn(response);
 
