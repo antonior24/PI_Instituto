@@ -17,6 +17,8 @@ public class GuardiaResponseDTO {
 
 	private String nombreProfesor;
 
+	private Long idHorarioCobertura;
+
 	private Long idCursoCobertura;
 
 	private String nombreCursoCobertura;

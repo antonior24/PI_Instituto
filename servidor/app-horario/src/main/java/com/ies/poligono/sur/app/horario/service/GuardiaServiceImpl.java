@@ -158,6 +158,7 @@ public class GuardiaServiceImpl implements GuardiaService {
 		dto.setId(guardia.getId());
 		dto.setIdProfesor(guardia.getProfesor().getIdProfesor());
 		dto.setNombreProfesor(guardia.getProfesor().getNombre());
+		dto.setIdHorarioCobertura(guardia.getHorarioCobertura().getId());
 		dto.setIdCursoCobertura(guardia.getHorarioCobertura().getCurso().getIdCurso());
 		dto.setNombreCursoCobertura(guardia.getHorarioCobertura().getCurso().getNombre());
 		dto.setFecha(guardia.getFecha());
