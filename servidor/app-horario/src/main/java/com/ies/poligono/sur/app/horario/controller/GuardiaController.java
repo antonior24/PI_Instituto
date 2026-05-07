@@ -56,7 +56,7 @@ public class GuardiaController {
 	// --------------------------------------------------------------------------
 	@PostMapping
 	@PreAuthorize("hasRole('PROFESOR') or hasRole('ADMINISTRADOR')")
-	public ResponseEntity<GuardiaResponseDTO> registrarGuardia(
+	public ResponseEntity<?> registrarGuardia(
 			@RequestBody RegistrarGuardiaDTO dto,
 			Principal principal) {
 
@@ -80,7 +80,7 @@ public class GuardiaController {
 			GuardiaResponseDTO response = guardiaService.registrarGuardia(dto, idProfesor);
 			return ResponseEntity.ok(response);
 		} catch (IllegalArgumentException e) {
-			return ResponseEntity.badRequest().build();
+			return ResponseEntity.badRequest().body(e.getMessage());
 		}
 	}
 
