@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ies.poligono.sur.app.horario.apputils.AusenciasUtils;
 import com.ies.poligono.sur.app.horario.dto.GuardiaResponseDTO;
 import com.ies.poligono.sur.app.horario.dto.HorarioDisponibleDTO;
 import com.ies.poligono.sur.app.horario.dto.RegistrarGuardiaDTO;
@@ -130,9 +131,14 @@ public class GuardiaController {
 			return ResponseEntity.ok(java.util.Collections.emptyList());
 		}
 
+		// Calcular el día de la semana para la fecha
+		String diaEsperado = AusenciasUtils.obtenerDiaSemanaByFecha(fecha);
+
 		// Obtener las franjas de guardia del profesor (solo sus horarios marcados como guardia)
+		// y filtrar solo para el día específico
 		List<Horario> horariosGuardia = horarioService.obtenerPorProfesor(idProfesorAPedir).stream()
 				.filter(h -> h.getAsignatura() != null && h.getAsignatura().getNombre().contains("Guardia"))
+				.filter(h -> h.getDia() != null && diaEsperado.equalsIgnoreCase(h.getDia().trim()))
 				.toList();
 
 		if (horariosGuardia.isEmpty()) {
