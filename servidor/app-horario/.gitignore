@@ -28,6 +28,7 @@ Cargo.lock
 .env.local
 *.properties
 !application.properties
+!application-prod.properties
 
 # Logs
 *.log
@@ -37,4 +38,3 @@ logs/
 *.tmp
 *.bak
 dist/
-

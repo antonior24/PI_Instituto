@@ -1,13 +1,16 @@
 package com.ies.poligono.sur.app.horario.controller;
 
 import java.security.Principal;
+import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +27,9 @@ import com.ies.poligono.sur.app.horario.dto.HorarioDisponibleDTO;
 import com.ies.poligono.sur.app.horario.dto.PostImportacionInputDTO;
 import com.ies.poligono.sur.app.horario.model.Horario;
 import com.ies.poligono.sur.app.horario.model.Profesor;
+import com.ies.poligono.sur.app.horario.model.Usuario;
 import com.ies.poligono.sur.app.horario.processor.HorarioServiceProcessor;
+import com.ies.poligono.sur.app.horario.dao.UsuarioRepository;
 import com.ies.poligono.sur.app.horario.service.HorarioService;
 import com.ies.poligono.sur.app.horario.service.HorarioPDFService;
 import com.ies.poligono.sur.app.horario.service.ProfesorService;
@@ -44,6 +49,9 @@ public class HorarioController {
 
 	@Autowired
 	HorarioPDFService horarioPDFService;
+
+	@Autowired
+	UsuarioRepository usuarioRepository;
 
 	// Endpoint para obtener horarios
 	@GetMapping
@@ -66,7 +74,7 @@ public class HorarioController {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 			}
 
-			Profesor profesor = profesorService.findByEmailUsuario(principal.getName());
+			Profesor profesor = resolverProfesorAutenticado(principal.getName());
 			if (profesor == null) {
 				System.out.println("❌ Profesor no encontrado para email: " + principal.getName());
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -108,7 +116,7 @@ public class HorarioController {
 				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 			}
 
-			Profesor profesor = profesorService.findByEmailUsuario(principal.getName());
+			Profesor profesor = resolverProfesorAutenticado(principal.getName());
 			if (profesor == null) {
 				System.out.println("❌ Profesor no encontrado para email: " + principal.getName());
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -119,11 +127,16 @@ public class HorarioController {
 			
 			// Generar el PDF
 			byte[] pdfBytes = horarioPDFService.generarHorarioPDF(profesor, horarios);
+			String nombreProfesorSeguro = normalizarNombreArchivo(profesor.getNombre());
+			String nombreArchivo = "horario-" + nombreProfesorSeguro + ".pdf";
+			ContentDisposition disposition = ContentDisposition.attachment()
+					.filename(nombreArchivo, StandardCharsets.UTF_8)
+					.build();
 			
 			// Retornar el PDF como descarga
 			return ResponseEntity.ok()
 					.contentType(MediaType.APPLICATION_PDF)
-					.header("Content-Disposition", "attachment; filename=horario-" + profesor.getNombre().replaceAll("\\s+", "_") + ".pdf")
+					.header("Content-Disposition", disposition.toString())
 					.body(pdfBytes);
 					
 		} catch (Exception e) {
@@ -141,6 +154,46 @@ public class HorarioController {
 		Map<String, String> response = new HashMap<>();
 		response.put("message", "Horarios importados correctamente");
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
+	}
+
+	private Profesor resolverProfesorAutenticado(String principalName) {
+		if (principalName == null) {
+			return null;
+		}
+
+		String identifier = principalName.trim();
+		if (identifier.isEmpty()) {
+			return null;
+		}
+
+		try {
+			Profesor profesorPorEmail = profesorService.findByEmailUsuario(identifier);
+			if (profesorPorEmail != null) {
+				return profesorPorEmail;
+			}
+		} catch (RuntimeException ignored) {
+		}
+
+		Usuario usuario = usuarioRepository.findByEmail(identifier);
+		if (usuario == null || usuario.getId() == null) {
+			return null;
+		}
+
+		return profesorService.findByIdUsuario(usuario.getId());
+	}
+
+	private String normalizarNombreArchivo(String valor) {
+		if (valor == null || valor.isBlank()) {
+			return "profesor";
+		}
+
+		String normalizado = Normalizer.normalize(valor, Normalizer.Form.NFD)
+				.replaceAll("\\p{M}+", "")
+				.replaceAll("[^a-zA-Z0-9._-]+", "_")
+				.replaceAll("_+", "_")
+				.replaceAll("^_+|_+$", "");
+
+		return normalizado.isBlank() ? "profesor" : normalizado;
 	}
 
 }

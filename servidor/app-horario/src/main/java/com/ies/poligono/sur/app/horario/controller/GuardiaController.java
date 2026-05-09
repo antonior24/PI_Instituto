@@ -175,7 +175,7 @@ public class GuardiaController {
 	// GET: Obtener guardias por fecha
 	// --------------------------------------------------------------------------
 	@GetMapping("/fecha")
-	@PreAuthorize("hasRole('ADMINISTRADOR')")
+	@PreAuthorize("hasRole('PROFESOR') or hasRole('ADMINISTRADOR')")
 	public ResponseEntity<List<GuardiaResponseDTO>> obtenerGuardiasPorFecha(
 			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
 

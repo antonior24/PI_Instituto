@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ies.poligono.sur.app.horario.dao.ProfesorRepository;
+import com.ies.poligono.sur.app.horario.dao.UsuarioImagenRepository;
 import com.ies.poligono.sur.app.horario.dao.UsuarioRepository;
 import com.ies.poligono.sur.app.horario.model.Profesor;
 import com.ies.poligono.sur.app.horario.model.Usuario;
@@ -26,6 +27,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 
 	@Autowired
 	PasswordEncoder passwordEncoder;
+
+	@Autowired
+	UsuarioImagenRepository usuarioImagenRepository;
 
 	private final String DOMINIO_CORREO = "@iespoligonosur.org";
 
@@ -61,6 +65,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 		}
 
 		// Ahora que está libre, eliminamos el usuario
+		usuarioImagenRepository.deleteById(id);
 		usuarioRepository.delete(usuario);
 	}
 

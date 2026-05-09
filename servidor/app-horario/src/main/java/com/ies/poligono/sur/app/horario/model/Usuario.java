@@ -1,5 +1,7 @@
 package com.ies.poligono.sur.app.horario.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,6 +17,7 @@ import lombok.Data;
 @Data //Lombok
 @Entity //Marca la clase como una entidad JPA, es decir, una tabla en la base de datos
 @Table(name = "Usuario") //Especifica el nombre de la tabla en la base de datos
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Usuario {
 
 	@Id
@@ -38,5 +41,8 @@ public class Usuario {
     @NotNull(message = "El rol no puede ser nulo")
     @Pattern(regexp = "^(profesor|administrador)$", message = "El rol debe ser 'profesor' o 'administrador'")
     private String rol;
+
+    @Column(name = "tiene_imagen", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
+    private boolean imagen;
 
 }

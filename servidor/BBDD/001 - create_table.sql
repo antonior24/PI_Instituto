@@ -3,7 +3,15 @@ CREATE TABLE Usuario (
     nombre VARCHAR(100) NOT NULL,
     correo VARCHAR(100) NOT NULL,
     contraseña VARCHAR(100) NOT NULL,
-    rol VARCHAR(50) NOT NULL
+    rol VARCHAR(50) NOT NULL,
+    tiene_imagen BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE usuario_imagen (
+    id_usuario INT PRIMARY KEY,
+    mime_type VARCHAR(100) NOT NULL,
+    datos LONGBLOB NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario) ON DELETE CASCADE
 );
 
 -- Tabla Profesor
