@@ -1,5 +1,7 @@
 package com.ies.poligono.sur.app.horario.apputils;
 
+import java.text.Normalizer;
+
 public class GuardiaPointsUtils {
 
 	/**
@@ -15,58 +17,50 @@ public class GuardiaPointsUtils {
 			return 0;
 		}
 
-		String curso = nombreCurso.toUpperCase().trim();
+		String curso = Normalizer.normalize(nombreCurso, Normalizer.Form.NFD)
+				.replaceAll("\\p{M}", "")
+				.toUpperCase()
+				.replaceAll("[^A-Z0-9]+", " ")
+				.trim();
+
+		boolean esEso = curso.contains("ESO");
+		boolean esBachillerato = curso.contains("BACH") || curso.contains("BACHILLERATO");
+		boolean esGradoBasico = curso.contains("GRADO BASICO");
+		boolean esGradoMedio = curso.contains("GRADO MEDIO");
+		boolean esGradoSuperior = curso.contains("GRADO SUPERIOR");
 
 		// 1º y 2º ESO: 4 puntos
-		if (curso.contains("1º") && curso.contains("ESO")) {
+		if ((curso.startsWith("1") || curso.contains(" 1 ")) && esEso) {
 			return 4;
 		}
-		if (curso.contains("1ER") && curso.contains("ESO")) {
-			return 4;
-		}
-		if (curso.contains("2º") && curso.contains("ESO")) {
-			return 4;
-		}
-		if (curso.contains("2DO") && curso.contains("ESO")) {
+		if ((curso.startsWith("2") || curso.contains(" 2 ")) && esEso) {
 			return 4;
 		}
 
 		// 3º y 4º ESO y Grado básico: 3 puntos
-		if (curso.contains("3º") && curso.contains("ESO")) {
+		if ((curso.startsWith("3") || curso.contains(" 3 ")) && esEso) {
 			return 3;
 		}
-		if (curso.contains("3ER") && curso.contains("ESO")) {
+		if ((curso.startsWith("4") || curso.contains(" 4 ")) && esEso) {
 			return 3;
 		}
-		if (curso.contains("4º") && curso.contains("ESO")) {
-			return 3;
-		}
-		if (curso.contains("4TO") && curso.contains("ESO")) {
-			return 3;
-		}
-		if (curso.toUpperCase().contains("GRADO BÁSICO")) {
+		if (esGradoBasico) {
 			return 3;
 		}
 
 		// 1º y 2º BACH y Grados medios: 2 puntos
-		if (curso.contains("1º") && (curso.contains("BACH") || curso.contains("BACHILLERATO"))) {
+		if ((curso.startsWith("1") || curso.contains(" 1 ")) && esBachillerato) {
 			return 2;
 		}
-		if (curso.contains("1ER") && (curso.contains("BACH") || curso.contains("BACHILLERATO"))) {
+		if ((curso.startsWith("2") || curso.contains(" 2 ")) && esBachillerato) {
 			return 2;
 		}
-		if (curso.contains("2º") && (curso.contains("BACH") || curso.contains("BACHILLERATO"))) {
-			return 2;
-		}
-		if (curso.contains("2DO") && (curso.contains("BACH") || curso.contains("BACHILLERATO"))) {
-			return 2;
-		}
-		if (curso.contains("GRADO MEDIO")) {
+		if (esGradoMedio) {
 			return 2;
 		}
 
 		// Grado superior: 1 punto
-		if (curso.contains("GRADO SUPERIOR")) {
+		if (esGradoSuperior) {
 			return 1;
 		}
 
