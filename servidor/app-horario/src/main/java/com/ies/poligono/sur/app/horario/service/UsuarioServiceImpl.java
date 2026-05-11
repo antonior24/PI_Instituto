@@ -47,6 +47,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
 		String contraseñaEncriptada = passwordEncoder.encode(usuario.getPassword());
 		usuario.setPassword(contraseñaEncriptada);
+		usuario.setRol(normalizarRoles(usuario.getRol()));
 
 		return usuarioRepository.save(usuario);
 	}
@@ -92,7 +93,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 			// Actualizar otros campos del usuario
 			usuarioExistente.setNombre(usuarioActualizado.getNombre());
 			usuarioExistente.setEmail(usuarioActualizado.getEmail());
-			usuarioExistente.setRol(usuarioActualizado.getRol());
+			usuarioExistente.setRol(normalizarRoles(usuarioActualizado.getRol()));
 
 			// Guardar el usuario actualizado en la base de datos
 			return usuarioRepository.save(usuarioExistente);
@@ -124,6 +125,19 @@ public class UsuarioServiceImpl implements UsuarioService {
 				.stripAccents(nombreProf.concat(apellidos).toLowerCase().replace(" ", ".").concat(DOMINIO_CORREO))
 				.toLowerCase();
 		return email;
+	}
+
+	private String normalizarRoles(String rol) {
+		if (rol == null) {
+			return null;
+		}
+
+		return java.util.Arrays.stream(rol.split(","))
+				.map(String::trim)
+				.map(String::toLowerCase)
+				.filter(role -> !role.isBlank())
+				.distinct()
+				.collect(java.util.stream.Collectors.joining(","));
 	}
 
 }

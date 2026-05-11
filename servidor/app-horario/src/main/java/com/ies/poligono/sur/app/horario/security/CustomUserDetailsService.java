@@ -1,6 +1,8 @@
 package com.ies.poligono.sur.app.horario.security;
 
-import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -27,13 +29,17 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("Usuario no encontrado con email: " + email);
         }
 
-        // Convertimos el rol en autoridad: ROLE_ADMINISTRADOR o ROLE_PROFESOR
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + usuario.getRol().toUpperCase());
+        // Convertimos uno o varios roles en authorities: ROLE_ADMINISTRADOR, ROLE_PROFESOR, etc.
+        List<SimpleGrantedAuthority> authorities = Arrays.stream(usuario.getRol().split(","))
+            .map(String::trim)
+            .filter(role -> !role.isBlank())
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
+            .collect(Collectors.toList());
 
         return new User(
                 usuario.getEmail(),
                 usuario.getPassword(),
-                Collections.singletonList(authority)
+            authorities
         );
     }
 }
