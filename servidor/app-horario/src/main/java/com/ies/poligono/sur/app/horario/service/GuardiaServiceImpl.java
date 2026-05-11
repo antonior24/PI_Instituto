@@ -85,12 +85,35 @@ public class GuardiaServiceImpl implements GuardiaService {
 			throw new IllegalArgumentException("Ya hay una guardia registrada para ese horario en esa fecha.");
 		}
 
+		// Comprobar que el profesor no tenga otra guardia que solape en la misma fecha
+		// Obtener las guardias del profesor en esa fecha
+		List<Guardia> guardiasProfesorMismoDia = guardiaRepository
+				.findByProfesor_IdProfesorAndFecha(idProfesor, dto.getFecha());
+		if (guardiasProfesorMismoDia != null && !guardiasProfesorMismoDia.isEmpty()) {
+			// obtener la franja de la cobertura que se va a registrar
+			if (horarioCobertura.getFranja() != null) {
+				java.time.LocalTime nuevoInicio = horarioCobertura.getFranja().getHoraInicio();
+				java.time.LocalTime nuevoFin = horarioCobertura.getFranja().getHoraFin();
+				for (Guardia g : guardiasProfesorMismoDia) {
+					if (g.getHorarioCobertura() != null && g.getHorarioCobertura().getFranja() != null) {
+						java.time.LocalTime inicioExistente = g.getHorarioCobertura().getFranja().getHoraInicio();
+						java.time.LocalTime finExistente = g.getHorarioCobertura().getFranja().getHoraFin();
+						// Comprobar solapamiento: (inicioA < finB) && (inicioB < finA)
+						if (nuevoInicio.isBefore(finExistente) && inicioExistente.isBefore(nuevoFin)) {
+							throw new IllegalArgumentException(
+								"No puedes registrar dos guardias que se solapen en la misma franja ese día.");
+						}
+					}
+				}
+			}
+		}
+
 		// Calcular puntos según el curso del horario a cubrir
 		Integer puntos = GuardiaPointsUtils.calcularPuntosGuardia(horarioCobertura.getCurso().getNombre());
 
+		// Si no se puede calcular puntos automáticamente, asignar 1 punto por defecto
 		if (puntos == 0) {
-			throw new IllegalArgumentException(
-					"No se puede calcular puntos para el curso: " + horarioCobertura.getCurso().getNombre());
+			puntos = 1;
 		}
 
 		// Crear la guardia
@@ -146,6 +169,24 @@ public class GuardiaServiceImpl implements GuardiaService {
 		if (!guardiaRepository.existsById(idGuardia)) {
 			throw new IllegalArgumentException("Guardia no encontrada.");
 		}
+		guardiaRepository.deleteById(idGuardia);
+	}
+
+	// --------------------------------------------------------------------------
+	// MÉTODO: desregistrarGuardia
+	// Descripción: Desregistra una guardia validando que sea del profesor o admin
+	// --------------------------------------------------------------------------
+	@Override
+	public void desregistrarGuardia(Long idGuardia, Long idProfesor) {
+		Guardia guardia = guardiaRepository.findById(idGuardia)
+				.orElseThrow(() -> new IllegalArgumentException("Guardia no encontrada."));
+
+		// Si se proporciona idProfesor, validar que sea el propietario de la guardia
+		if (idProfesor != null && !guardia.getProfesor().getIdProfesor().equals(idProfesor)) {
+			throw new IllegalArgumentException(
+					"No tienes permiso para desregistrar una guardia que no registraste.");
+		}
+
 		guardiaRepository.deleteById(idGuardia);
 	}
 

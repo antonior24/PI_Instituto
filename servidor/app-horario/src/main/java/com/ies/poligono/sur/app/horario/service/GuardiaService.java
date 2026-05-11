@@ -17,4 +17,6 @@ public interface GuardiaService {
 	Integer obtenerPuntosTotalesPorProfesor(Long idProfesor);
 
 	void eliminarGuardia(Long idGuardia);
+
+	void desregistrarGuardia(Long idGuardia, Long idProfesor);
 }

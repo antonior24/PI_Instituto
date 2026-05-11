@@ -177,12 +177,13 @@ class GuardiaServiceImplUnitTest {
 	}
 
 	@Test
-	void registrarGuardiaFallaSiNoSePuedenCalcularPuntos() {
+	void registrarGuardiaAsigna1PuntoSiNoSePuedenCalcularPuntos() {
 		LocalDate fecha = LocalDate.now().plusDays(1);
 		RegistrarGuardiaDTO dto = new RegistrarGuardiaDTO(10L, fecha, null);
 
 		Profesor profesor = new Profesor();
 		profesor.setIdProfesor(1L);
+		profesor.setNombre("Profe");
 		when(profesorRepository.findById(1L)).thenReturn(Optional.of(profesor));
 
 		Horario cobertura = new Horario();
@@ -201,8 +202,23 @@ class GuardiaServiceImplUnitTest {
 
 		when(guardiaRepository.existsByHorarioCobertura_IdAndFecha(10L, fecha)).thenReturn(false);
 
-		assertThatThrownBy(() -> guardiaService.registrarGuardia(dto, 1L))
-				.isInstanceOf(IllegalArgumentException.class);
+		// Simular que save devuelve una guardia
+		ArgumentCaptor<Guardia> captor = ArgumentCaptor.forClass(Guardia.class);
+		when(guardiaRepository.save(any(Guardia.class))).thenAnswer(invocation -> {
+			Guardia g = invocation.getArgument(0);
+			g.setId(1L);
+			g.setFechaRegistro(LocalDateTime.now());
+			return g;
+		});
+
+		GuardiaResponseDTO result = guardiaService.registrarGuardia(dto, 1L);
+
+		verify(guardiaRepository).save(captor.capture());
+		Guardia guardiaGuardada = captor.getValue();
+		
+		// Verifique que se asignaron 1 punto por defecto
+		assertThat(guardiaGuardada.getPuntos()).isEqualTo(1);
+		assertThat(result).isNotNull();
 	}
 
 	@Test
