@@ -88,9 +88,9 @@ public class GuardiaServiceImpl implements GuardiaService {
 		// Calcular puntos según el curso del horario a cubrir
 		Integer puntos = GuardiaPointsUtils.calcularPuntosGuardia(horarioCobertura.getCurso().getNombre());
 
+		// Si no se puede calcular puntos automáticamente, asignar 1 punto por defecto
 		if (puntos == 0) {
-			throw new IllegalArgumentException(
-					"No se puede calcular puntos para el curso: " + horarioCobertura.getCurso().getNombre());
+			puntos = 1;
 		}
 
 		// Crear la guardia
@@ -146,6 +146,24 @@ public class GuardiaServiceImpl implements GuardiaService {
 		if (!guardiaRepository.existsById(idGuardia)) {
 			throw new IllegalArgumentException("Guardia no encontrada.");
 		}
+		guardiaRepository.deleteById(idGuardia);
+	}
+
+	// --------------------------------------------------------------------------
+	// MÉTODO: desregistrarGuardia
+	// Descripción: Desregistra una guardia validando que sea del profesor o admin
+	// --------------------------------------------------------------------------
+	@Override
+	public void desregistrarGuardia(Long idGuardia, Long idProfesor) {
+		Guardia guardia = guardiaRepository.findById(idGuardia)
+				.orElseThrow(() -> new IllegalArgumentException("Guardia no encontrada."));
+
+		// Si se proporciona idProfesor, validar que sea el propietario de la guardia
+		if (idProfesor != null && !guardia.getProfesor().getIdProfesor().equals(idProfesor)) {
+			throw new IllegalArgumentException(
+					"No tienes permiso para desregistrar una guardia que no registraste.");
+		}
+
 		guardiaRepository.deleteById(idGuardia);
 	}
 

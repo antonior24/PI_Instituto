@@ -211,16 +211,34 @@ public class GuardiaController {
 	}
 
 	// --------------------------------------------------------------------------
-	// DELETE: Eliminar una guardia
+	// DELETE: Desregistrar una guardia (solo el profesor que la registró)
 	// --------------------------------------------------------------------------
 	@DeleteMapping("/{id}")
-	@PreAuthorize("hasRole('ADMINISTRADOR')")
-	public ResponseEntity<Void> eliminarGuardia(@PathVariable Long id) {
+	@PreAuthorize("hasRole('PROFESOR') or hasRole('ADMINISTRADOR')")
+	public ResponseEntity<?> desregistrarGuardia(
+			@PathVariable Long id,
+			Principal principal) {
 		try {
-			guardiaService.eliminarGuardia(id);
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+			Set<String> roles = auth.getAuthorities().stream()
+					.map(r -> r.getAuthority())
+					.collect(Collectors.toSet());
+			
+			Long idProfesor = null;
+			
+			// Si es admin, permitir eliminar cualquiera
+			if (roles.contains("ROLE_ADMINISTRADOR")) {
+				idProfesor = null; // No validar (admin puede desregistrar cualquiera)
+			} else {
+				// Si no, usar el profesor autenticado
+				Profesor profesor = profesorService.findByEmailUsuario(principal.getName());
+				idProfesor = profesor.getIdProfesor();
+			}
+			
+			guardiaService.desregistrarGuardia(id, idProfesor);
 			return ResponseEntity.noContent().build();
 		} catch (IllegalArgumentException e) {
-			return ResponseEntity.notFound().build();
+			return ResponseEntity.badRequest().body(e.getMessage());
 		}
 	}
 }
