@@ -85,6 +85,29 @@ public class GuardiaServiceImpl implements GuardiaService {
 			throw new IllegalArgumentException("Ya hay una guardia registrada para ese horario en esa fecha.");
 		}
 
+		// Comprobar que el profesor no tenga otra guardia que solape en la misma fecha
+		// Obtener las guardias del profesor en esa fecha
+		List<Guardia> guardiasProfesorMismoDia = guardiaRepository
+				.findByProfesor_IdProfesorAndFecha(idProfesor, dto.getFecha());
+		if (guardiasProfesorMismoDia != null && !guardiasProfesorMismoDia.isEmpty()) {
+			// obtener la franja de la cobertura que se va a registrar
+			if (horarioCobertura.getFranja() != null) {
+				java.time.LocalTime nuevoInicio = horarioCobertura.getFranja().getHoraInicio();
+				java.time.LocalTime nuevoFin = horarioCobertura.getFranja().getHoraFin();
+				for (Guardia g : guardiasProfesorMismoDia) {
+					if (g.getHorarioCobertura() != null && g.getHorarioCobertura().getFranja() != null) {
+						java.time.LocalTime inicioExistente = g.getHorarioCobertura().getFranja().getHoraInicio();
+						java.time.LocalTime finExistente = g.getHorarioCobertura().getFranja().getHoraFin();
+						// Comprobar solapamiento: (inicioA < finB) && (inicioB < finA)
+						if (nuevoInicio.isBefore(finExistente) && inicioExistente.isBefore(nuevoFin)) {
+							throw new IllegalArgumentException(
+								"No puedes registrar dos guardias que se solapen en la misma franja ese día.");
+						}
+					}
+				}
+			}
+		}
+
 		// Calcular puntos según el curso del horario a cubrir
 		Integer puntos = GuardiaPointsUtils.calcularPuntosGuardia(horarioCobertura.getCurso().getNombre());
 
