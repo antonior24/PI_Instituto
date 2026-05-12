@@ -25,5 +25,21 @@ class JwtServiceTest {
 		assertThat(jwtService.extractRole(token)).isEqualTo("ROLE_ADMINISTRADOR");
 		assertThat(jwtService.validateToken(token, user)).isTrue();
 	}
+
+	@Test
+	void generateTokenIncluyeTodosLosRoles() {
+		JwtService jwtService = new JwtService();
+		UserDetails user = new User(
+				"mixto@iespoligonosur.org",
+				"x",
+				List.of(
+						new SimpleGrantedAuthority("ROLE_PROFESOR"),
+						new SimpleGrantedAuthority("ROLE_ADMINISTRADOR")));
+
+		String token = jwtService.generateToken(user);
+
+		assertThat(jwtService.extractRole(token)).isEqualTo("ROLE_PROFESOR,ROLE_ADMINISTRADOR");
+		assertThat(jwtService.validateToken(token, user)).isTrue();
+	}
 }
 

@@ -50,4 +50,20 @@ class CustomUserDetailsServiceTest {
 				.extracting(a -> a.getAuthority())
 				.containsExactly("ROLE_PROFESOR");
 	}
+
+	@Test
+	void loadUserByUsernameDevuelveMasDeUnaAuthorityCuandoTieneVariosRoles() {
+		Usuario usuario = new Usuario();
+		usuario.setEmail("mixto@iespoligonosur.org");
+		usuario.setPassword("ENC");
+		usuario.setRol("profesor,administrador");
+
+		when(usuarioRepository.findByEmail("mixto@iespoligonosur.org")).thenReturn(usuario);
+
+		UserDetails details = customUserDetailsService.loadUserByUsername("mixto@iespoligonosur.org");
+
+		assertThat(details.getAuthorities())
+				.extracting(a -> a.getAuthority())
+				.containsExactlyInAnyOrder("ROLE_PROFESOR", "ROLE_ADMINISTRADOR");
+	}
 }

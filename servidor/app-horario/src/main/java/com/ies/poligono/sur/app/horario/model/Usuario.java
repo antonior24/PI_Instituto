@@ -39,7 +39,7 @@ public class Usuario {
     private String password;
 
     @NotNull(message = "El rol no puede ser nulo")
-    @Pattern(regexp = "^(profesor|administrador)$", message = "El rol debe ser 'profesor' o 'administrador'")
+    @Pattern(regexp = "^(profesor|administrador)(\s*,\s*(profesor|administrador))*$", message = "El rol debe ser 'profesor', 'administrador' o ambos separados por coma")
     private String rol;
 
     @Column(name = "tiene_imagen", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT FALSE")
